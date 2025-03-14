@@ -45,13 +45,19 @@ def webhook():
 
     if "events" in data:
         for event in data["events"]:
-            print("Event:", event)  # イベントの内容もログに出力
+            print("Event received:", event)  # イベントの内容もログに出力
 
-            if event["type"] == "message" and "text" in event["message"]:
+            if event["type"] == "message":
+                print("Message received:", event["message"])  # メッセージ内容をログに出力
+
+                if event["source"]["type"] == "group":
+                    group_id = event["source"]["groupId"]
+                    print("Group ID:", group_id)  # グループIDをログに出力
+
+                # 受け取ったメッセージに応じた処理
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
-                # 「タスク完了」と送られたら、確認画像とはい/いいえボタンを送る
                 if user_message == "タスク完了":
                     messages = [
                         {
@@ -75,21 +81,11 @@ def webhook():
                     send_reply(reply_token, messages)
 
                 else:
-                    # 通常のオウム返し
                     reply_message = f"あなたのメッセージ: {user_message}"
                     send_reply(reply_token, [{"type": "text", "text": reply_message}])
 
-            # 「はい」や「いいえ」が押された場合の処理
-            elif event["type"] == "message" and "text" in event["message"]:
-                reply_token = event["replyToken"]
-                user_message = event["message"]["text"]
-
-                # グループIDの確認
-                if event["source"]["type"] == "group":
-                    group_id = event["source"]["groupId"]
-                    print("Group ID:", group_id)
-    
     return jsonify({"status": "ok"}), 200
+
 
 
 if __name__ == "__main__":
