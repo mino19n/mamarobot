@@ -40,18 +40,22 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    # request.jsonの内容をログに出力
-    data = request.json
-    print("Received data:", data)  # ここでrequest.jsonの内容を確認
-
     # リクエストヘッダーとボディをログに出力
     print("Request Headers:", request.headers)
-    print("Request Body:", request.get_data())  # これでPOSTリクエストのボディも確認できます
+    print("Request Body:", request.get_data())  # POSTリクエストのボディも確認
 
-    # その他の処理（イベントをチェックなど）
-    if "events" in data:
+    try:
+        data = request.json  # リクエストのJSONデータを取得
+        if data is None:
+            print("Received data is None!")
+        else:
+            print("Received data:", data)  # ここでrequest.jsonの内容を確認
+    except Exception as e:
+        print(f"Error processing JSON: {e}")
+
+    if data and "events" in data:
         for event in data["events"]:
-            print("Event received:", event)  # イベント内容も確認
+            print("Event received:", event)  # イベント内容を確認
 
             if event["type"] == "message":
                 print("Message received:", event["message"])  # メッセージ内容をログに出力
@@ -60,7 +64,6 @@ def webhook():
                     group_id = event["source"]["groupId"]
                     print("Group ID:", group_id)  # グループIDをログに出力
 
-                # 受け取ったメッセージに応じた処理（例）
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
@@ -74,7 +77,6 @@ def webhook():
                     send_reply(reply_token, messages)
 
     return jsonify({"status": "ok"}), 200
-
 
 
 if __name__ == "__main__":
