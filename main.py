@@ -83,18 +83,22 @@ def webhook():
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
-                if user_message == "はい":
-                    # グループに通知する処理（グループIDを指定）
-                    group_id = "YOUR_GROUP_ID"  # ここにグループIDを設定
-                    group_message = "○○がタスクを完了しました！"
-                    send_message_to_group(group_id, group_message)
-                    send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
-
-                elif user_message == "いいえ":
-                    # 「今からしようね！」と返答
-                    send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
-
-    return jsonify({"status": "ok"}), 200
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+                if event["source"]["type"] == "group":
+                    group_id = event["source"]["groupId"]
+                    print("Group ID:", group_id)
+                    
+                    if user_message == "はい":
+                        # グループに通知する処理（グループIDを指定）
+                        group_id = "YOUR_GROUP_ID"  # ここにグループIDを設定
+                        group_message = "○○がタスクを完了しました！"
+                        send_message_to_group(group_id, group_message)
+                        send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
+    
+                    elif user_message == "いいえ":
+                        # 「今からしようね！」と返答
+                        send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
+    
+        return jsonify({"status": "ok"}), 200
+    
+    if __name__ == "__main__":
+        app.run(host="0.0.0.0", port=10000)
