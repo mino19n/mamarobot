@@ -50,6 +50,9 @@ def webhook():
             if event["type"] == "message":
                 print("Message received:", event["message"])  # メッセージ内容をログに出力
 
+                # event["source"] の内容を確認
+                print("Source data:", event["source"])  # ここでソースの内容を表示
+
                 # グループメッセージの場合、groupIdを取得
                 if event["source"]["type"] == "group":
                     group_id = event["source"].get("groupId")  # get()で存在しない場合でもエラーが起きないように
