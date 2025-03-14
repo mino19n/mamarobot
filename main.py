@@ -1,7 +1,10 @@
 from flask import Flask, request, jsonify
+import requests
 import os
 
 app = Flask(__name__)
+
+LINE_ACCESS_TOKEN = os.getenv("LINE_ACCESS_TOKEN")  # 環境変数から取得
 
 @app.route("/", methods=["GET"])
 def home():
@@ -11,8 +14,27 @@ def home():
 def webhook():
     data = request.json
     print("Received:", data)  # ログ確認用
+
+    # LINEのメッセージイベントがあるか確認
+    if "events" in data:
+        for event in data["events"]:
+            if event["type"] == "message" and "text" in event["message"]:
+                reply_token = event["replyToken"]
+                user_message = event["message"]["text"]
+                reply_message = f"あなたのメッセージ: {user_message}"  # 受け取ったメッセージをそのまま返す
+                
+                # LINEに返信
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {LINE_ACCESS_TOKEN}",
+                }
+                payload = {
+                    "replyToken": reply_token,
+                    "messages": [{"type": "text", "text": reply_message}],
+                }
+                requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
+
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Renderが指定するポートを使う
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=10000)
