@@ -6,6 +6,21 @@ app = Flask(__name__)
 
 CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
 
+# ユーザーIDからユーザー名を取得する関数
+def get_user_name(user_id):
+    url = f"https://api.line.me/v2/bot/profile/{user_id}"
+    headers = {
+        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}"
+    }
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        profile = response.json()
+        return profile.get("displayName")  # ユーザー名（表示名）を返す
+    else:
+        print(f"Failed to get user profile: {response.status_code}")
+        return None
+
 # グループにメッセージを送る関数
 def send_message_to_group(group_id, message):
     url = "https://api.line.me/v2/bot/message/push"
@@ -55,8 +70,8 @@ def webhook():
                     messages = [
                         {
                             "type": "image",
-                            "originalContentUrl": "https://your-image-url.com/sample.png",  # 画像URLを正しいものに変更
-                            "previewImageUrl": "https://your-image-url.com/sample.png",  # 画像URLを正しいものに変更
+                            "originalContentUrl": "images/sample.png",  # 画像URLを正しいものに変更
+                            "previewImageUrl": "images/sample.png",  # 画像URLを正しいものに変更
                         },
                         {
                             "type": "template",
@@ -75,22 +90,24 @@ def webhook():
 
                 # 「はい」や「いいえ」が押された場合の処理
                 elif user_message == "はい":
-                    group_id = "C0973bdef9d19444731d1ca0023f34ff3"  # ここにグループIDを設定
-                    group_message = "○○がタスクを完了しました！"
-                    send_message_to_group(group_id, group_message)
-                    send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
+                    user_id = event["source"]["userId"]
+                    user_name = get_user_name(user_id)  # ユーザー名を取得
+
+                    if user_name:
+                        group_id = "YOUR_GROUP_ID"  # ここにグループIDを設定
+                        group_message = f"{user_name}がタスクを完了しました！"
+                        send_message_to_group(group_id, group_message)  # グループに通知
+                        send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
 
                 elif user_message == "いいえ":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
 
-                # ここではグループ内での反応には反応しない
-                # グループ内での「はい」「いいえ」メッセージに反応しない
-                elif event["source"]["type"] == "group" and event["type"] == "message":
-                    # グループ内のメッセージには反応しない
-                    pass
+            # ここではグループ内での反応には反応しない
+            elif event["source"]["type"] == "group" and event["type"] == "message":
+                pass
 
-            # 他のメッセージの場合は、オウム返し
             else:
+                # 通常のオウム返し
                 reply_message = f"あなたのメッセージ: {user_message}"
                 send_reply(reply_token, [{"type": "text", "text": reply_message}])
 
