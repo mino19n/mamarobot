@@ -40,7 +40,7 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json
+    data = request.json  # リクエストボディをJSONとして取得
     print("Received data:", data)  # 受け取ったデータをログに出力
 
     if "events" in data:
@@ -50,14 +50,16 @@ def webhook():
             if event["type"] == "message":
                 print("Message received:", event["message"])  # メッセージ内容をログに出力
 
+                # グループメッセージの場合、groupIdを取得
                 if event["source"]["type"] == "group":
-                    group_id = event["source"]["groupId"]
-                    print("Group ID:", group_id)  # グループIDをログに出力
-
-                    # ここでグループIDに対してメッセージを送信
-                    if "タスク完了" in event["message"]["text"]:
-                        send_message_to_group(group_id, "タスクが完了しました！")
-
+                    group_id = event["source"].get("groupId")  # get()で存在しない場合でもエラーが起きないように
+                    if group_id:
+                        print("Group ID:", group_id)  # グループIDをログに出力
+                    else:
+                        print("No groupId found for this event.")
+                else:
+                    print("This is not a group message.")
+                
                 # 受け取ったメッセージに応じた処理
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
@@ -66,8 +68,8 @@ def webhook():
                     messages = [
                         {
                             "type": "image",
-                            "originalContentUrl": "images/sample.png",
-                            "previewImageUrl": "images/sample.png",
+                            "originalContentUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/sample.png",
+                            "previewImageUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/blob/main/images/sample.png",
                         },
                         {
                             "type": "template",
