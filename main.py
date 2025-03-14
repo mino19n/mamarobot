@@ -40,61 +40,40 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
+    # request.jsonの内容をログに出力
     data = request.json
-    print("Received data:", data)  # データ全体を確認
+    print("Received data:", data)  # ここでrequest.jsonの内容を確認
 
-    # この時点でdataがNoneだった場合の処理
-    if not data:
-        print("No data received.")
-        return jsonify({"status": "no data"}), 400
+    # リクエストヘッダーとボディをログに出力
+    print("Request Headers:", request.headers)
+    print("Request Body:", request.get_data())  # これでPOSTリクエストのボディも確認できます
 
+    # その他の処理（イベントをチェックなど）
     if "events" in data:
         for event in data["events"]:
-            print("Event received:", event)  # イベント内容も出力
+            print("Event received:", event)  # イベント内容も確認
 
             if event["type"] == "message":
-                print("Message received:", event["message"])  # メッセージ内容を出力
+                print("Message received:", event["message"])  # メッセージ内容をログに出力
 
-                # その他の処理（groupId取得など）
                 if event["source"]["type"] == "group":
-                    group_id = event["source"].get("groupId")
-                    if group_id:
-                        print("Group ID:", group_id)
-                    else:
-                        print("No groupId found for this event.")
+                    group_id = event["source"]["groupId"]
+                    print("Group ID:", group_id)  # グループIDをログに出力
 
-                # メッセージに応じた返信処理
+                # 受け取ったメッセージに応じた処理（例）
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
                 if user_message == "タスク完了":
                     messages = [
                         {
-                            "type": "image",
-                            "originalContentUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/sample.png",
-                            "previewImageUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/blob/main/images/sample.png",
-                        },
-                        {
-                            "type": "template",
-                            "altText": "タスクの確認",
-                            "template": {
-                                "type": "buttons",
-                                "text": "これ終わった？",
-                                "actions": [
-                                    {"type": "message", "label": "はい", "text": "はい"},
-                                    {"type": "message", "label": "いいえ", "text": "いいえ"},
-                                ],
-                            },
-                        },
+                            "type": "text",
+                            "text": "タスクが完了しました！"
+                        }
                     ]
                     send_reply(reply_token, messages)
 
-                else:
-                    reply_message = f"あなたのメッセージ: {user_message}"
-                    send_reply(reply_token, [{"type": "text", "text": reply_message}])
-
     return jsonify({"status": "ok"}), 200
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Renderの環境変数PORTを使う
