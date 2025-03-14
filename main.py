@@ -40,30 +40,30 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.json  # リクエストボディをJSONとして取得
-    print("Received data:", data)  # 受け取ったデータをログに出力
+    data = request.json
+    print("Received data:", data)  # データ全体を確認
+
+    # この時点でdataがNoneだった場合の処理
+    if not data:
+        print("No data received.")
+        return jsonify({"status": "no data"}), 400
 
     if "events" in data:
         for event in data["events"]:
-            print("Event received:", event)  # イベントの内容もログに出力
+            print("Event received:", event)  # イベント内容も出力
 
             if event["type"] == "message":
-                print("Message received:", event["message"])  # メッセージ内容をログに出力
+                print("Message received:", event["message"])  # メッセージ内容を出力
 
-                # event["source"] の内容を確認
-                print("Source data:", event["source"])  # ここでソースの内容を表示
-
-                # グループメッセージの場合、groupIdを取得
+                # その他の処理（groupId取得など）
                 if event["source"]["type"] == "group":
-                    group_id = event["source"].get("groupId")  # get()で存在しない場合でもエラーが起きないように
+                    group_id = event["source"].get("groupId")
                     if group_id:
-                        print("Group ID:", group_id)  # グループIDをログに出力
+                        print("Group ID:", group_id)
                     else:
                         print("No groupId found for this event.")
-                else:
-                    print("This is not a group message.")
-                
-                # 受け取ったメッセージに応じた処理
+
+                # メッセージに応じた返信処理
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
@@ -94,6 +94,7 @@ def webhook():
                     send_reply(reply_token, [{"type": "text", "text": reply_message}])
 
     return jsonify({"status": "ok"}), 200
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Renderの環境変数PORTを使う
