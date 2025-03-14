@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-LINE_ACCESS_TOKEN = os.getenv("LINE_ACCESS_TOKEN")  # 環境変数から取得
+CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数から取得
 
 @app.route("/", methods=["GET"])
 def home():
@@ -26,7 +26,7 @@ def webhook():
                 # LINEに返信
                 headers = {
                     "Content-Type": "application/json",
-                    "Authorization": f"Bearer {LINE_ACCESS_TOKEN}",
+                    "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
                 }
                 payload = {
                     "replyToken": reply_token,
