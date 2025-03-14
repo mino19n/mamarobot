@@ -54,6 +54,10 @@ def webhook():
                     group_id = event["source"]["groupId"]
                     print("Group ID:", group_id)  # グループIDをログに出力
 
+                    # ここでグループIDに対してメッセージを送信
+                    if "タスク完了" in event["message"]["text"]:
+                        send_message_to_group(group_id, "タスクが完了しました！")
+
                 # 受け取ったメッセージに応じた処理
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
@@ -62,8 +66,8 @@ def webhook():
                     messages = [
                         {
                             "type": "image",
-                            "originalContentUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/sample.png",
-                            "previewImageUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/blob/main/images/sample.png",
+                            "originalContentUrl": "images/sample.png",
+                            "previewImageUrl": "images/sample.png",
                         },
                         {
                             "type": "template",
@@ -85,8 +89,6 @@ def webhook():
                     send_reply(reply_token, [{"type": "text", "text": reply_message}])
 
     return jsonify({"status": "ok"}), 200
-
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))  # Renderの環境変数PORTを使う
