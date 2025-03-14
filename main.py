@@ -83,6 +83,12 @@ def webhook():
                 elif user_message == "いいえ":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
 
+                # ここではグループ内での反応には反応しない
+                # グループ内での「はい」「いいえ」メッセージに反応しない
+                elif event["source"]["type"] == "group" and event["type"] == "message":
+                    # グループ内のメッセージには反応しない
+                    pass
+
             # 他のメッセージの場合は、オウム返し
             else:
                 reply_message = f"あなたのメッセージ: {user_message}"
