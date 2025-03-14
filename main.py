@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
 
-# ユーザーIDからユーザー名を取得する関数（必要なら）
+# ユーザーIDからユーザー名を取得する関数
 def get_user_name(user_id):
     url = f"https://api.line.me/v2/bot/profile/{user_id}"
     headers = {"Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}"}
@@ -16,9 +16,9 @@ def get_user_name(user_id):
         return profile.get("displayName")
     else:
         print("Failed to get user profile:", response.status_code)
-        return None
+        return "不明なユーザー"
 
-# グループにメッセージを送る関数
+# グループにメッセージを送る関数（pushメッセージ）
 def send_message_to_group(group_id, message):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
@@ -38,10 +38,7 @@ def send_reply(reply_token, messages):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
     }
-    payload = {
-        "replyToken": reply_token,
-        "messages": messages,
-    }
+    payload = {"replyToken": reply_token, "messages": messages}
     response = requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
     print("Response from LINE API (reply):", response.json())
 
@@ -56,21 +53,19 @@ def webhook():
 
     if "events" in data:
         for event in data["events"]:
-            # まずはメッセージイベントか確認
+            # 確実にメッセージイベントかつテキストがある場合に処理
             if event["type"] == "message" and "text" in event["message"]:
+                source_type = event["source"]["type"]
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
-                # グループか個別か判別
-                source_type = event["source"]["type"]
-
                 if user_message == "タスク完了":
-                    # 「タスク完了」と送られたときは、確認画像とボタンを返信する
+                    # 「タスク完了」と送られたとき、確認画像とボタンを返信する
                     messages = [
                         {
                             "type": "image",
-                            "originalContentUrl": "images/sample.png",  # 画像URLを正しいものに変更
-                            "previewImageUrl": "images/sample.png",
+                            "originalContentUrl": "https://github.com/mino19n/mamarobot/tree/main/images",  # ここを正しい画像URLに変更
+                            "previewImageUrl": "https://github.com/mino19n/mamarobot/tree/main/images",
                         },
                         {
                             "type": "template",
@@ -88,34 +83,29 @@ def webhook():
                     send_reply(reply_token, messages)
 
                 elif user_message == "はい":
-                    # 「はい」が押された場合、ユーザー名を使ってグループに通知する
-                    # グループ外であれば個別返信もするが、グループ内の場合は返信はしない
                     if source_type == "group":
-                        # 例：個人のユーザー名を取得したい場合
+                        # グループ内の場合、ユーザーIDからユーザー名を取得してグループに通知する
                         user_id = event["source"].get("userId")
                         user_name = get_user_name(user_id) if user_id else "不明なユーザー"
                         group_message = f"{user_name}がタスクを完了しました！"
-                        # ここでグループに通知する。グループIDは、事前に取得済みまたは設定済みのものを使用する
-                        group_id = "YOUR_GROUP_ID"  # 実際のグループIDに置き換える
+                        group_id = "C0973bdef9d19444731d1ca0023f34ff3"  # 実際のグループIDに置き換える
                         send_message_to_group(group_id, group_message)
-                        # グループ内では返信はしない（または、必要ならログだけ出す）
                         print("Group notification sent; no reply in group chat.")
+                        # ※グループ内では返信しない
                     else:
-                        # 個別チャットの場合は返信する
                         send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
 
                 elif user_message == "いいえ":
-                    # 「いいえ」の場合も同様に、個別チャットなら返信し、グループ内なら何もしない
                     if source_type == "group":
                         print("No response for 'いいえ' in group chat.")
+                        # グループ内の場合は何もしない
                     else:
                         send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
-
+                
                 else:
-                    # その他のメッセージはオウム返し
-                    if source_type != "group":  # 個別チャットの場合のみ返信
-                        reply_message = f"あなたのメッセージ: {user_message}"
-                        send_reply(reply_token, [{"type": "text", "text": reply_message}])
+                    # その他のメッセージは、個別の場合のみオウム返し
+                    if source_type != "group":
+                        send_reply(reply_token, [{"type": "text", "text": f"あなたのメッセージ: {user_message}"}])
                     else:
                         print("No response for other messages in group chat.")
 
