@@ -1,6 +1,6 @@
-import requests
 import os
 from flask import Flask, request, jsonify
+import requests
 
 app = Flask(__name__)
 
@@ -43,14 +43,12 @@ def webhook():
     data = request.json
     print("Received data:", data)  # 受け取ったデータをログに出力
 
-    # LINEのメッセージイベントがあるか確認
     if "events" in data:
         for event in data["events"]:
             if event["type"] == "message" and "text" in event["message"]:
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
 
-                # 「タスク完了」と送られたら、確認画像とはい/いいえボタンを送る
                 if user_message == "タスク完了":
                     messages = [
                         {
@@ -78,7 +76,6 @@ def webhook():
                     reply_message = f"あなたのメッセージ: {user_message}"
                     send_reply(reply_token, [{"type": "text", "text": reply_message}])
 
-            # 「はい」や「いいえ」が押された場合の処理
             elif event["type"] == "message" and "text" in event["message"]:
                 reply_token = event["replyToken"]
                 user_message = event["message"]["text"]
@@ -86,20 +83,19 @@ def webhook():
                 if event["source"]["type"] == "group":
                     group_id = event["source"]["groupId"]
                     print("Group ID:", group_id)
-                    
+
                     if user_message == "はい":
                         # グループに通知する処理（グループIDを指定）
                         group_id = "YOUR_GROUP_ID"  # ここにグループIDを設定
                         group_message = "○○がタスクを完了しました！"
                         send_message_to_group(group_id, group_message)
                         send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
-    
+
                     elif user_message == "いいえ":
-                        # 「今からしようね！」と返答
                         send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
-    
-        return jsonify({"status": "ok"}), 200
-    
-    if __name__ == "__main__":
-        port = int(os.environ.get("PORT", 10000))  # デフォルトは10000
-        app.run(host="0.0.0.0", port=10000)
+
+    return jsonify({"status": "ok"}), 200
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))  # Renderの環境変数PORTを使う
+    app.run(host="0.0.0.0", port=port)
