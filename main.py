@@ -64,8 +64,8 @@ def webhook():
                     messages = [
                         {
                             "type": "image",
-                            "originalContentUrl": "https://github.com/mino19n/mamarobot/tree/main/images",  # ここを正しい画像URLに変更
-                            "previewImageUrl": "https://github.com/mino19n/mamarobot/tree/main/images",
+                            "originalContentUrl": "https://github.com/mino19n/mamarobot/blob/main/images/sample.png",  # ここを正しい画像URLに変更
+                            "previewImageUrl": "https://github.com/mino19n/mamarobot/blob/main/images/sample.png",
                         },
                         {
                             "type": "template",
