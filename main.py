@@ -72,17 +72,17 @@ def webhook():
                             "altText": "タスクの確認",
                             "template": {
                                 "type": "buttons",
-                                "text": "これ終わった？",
+                                "text": "やることはぜんぶおわりましたか？",
                                 "actions": [
-                                    {"type": "message", "label": "はい", "text": "はい"},
-                                    {"type": "message", "label": "いいえ", "text": "いいえ"},
+                                    {"type": "message", "label": "おわった！", "text": "はい"},
+                                    {"type": "message", "label": "まだだった…", "text": "いいえ"},
                                 ],
                             },
                         },
                     ]
                     send_reply(reply_token, messages)
 
-                elif user_message == "はい":
+                elif user_message == "おわった！":
                     if source_type == "group":
                         # グループ内の場合、ユーザーIDからユーザー名を取得してグループに通知する
                         user_id = event["source"].get("userId")
@@ -95,7 +95,7 @@ def webhook():
                     else:
                         send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
 
-                elif user_message == "いいえ":
+                elif user_message == "まだだった…":
                     if source_type == "group":
                         print("No response for 'いいえ' in group chat.")
                         # グループ内の場合は何もしない
