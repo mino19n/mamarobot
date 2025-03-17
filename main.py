@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify
 from utils import count_consecutive_days  # 祝日対応の連続日数計算
 
 # スプレッドシートのWebhook URL（GASのURL）
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwsrQfgBsSsqgfzy-Ku5cmF8lp8PVPEhCT1eJkN9RK1XeoLaj3PftkjEjpf4iMlXbHy/exec"
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxqDcuSzL3LRH4_RdKwnsxuYmPQl3Vy_sxzQxMDqU_h_gmgCqHX9H5JVr5L2pxTD3E4/exec"
 
 # スプレッドシートに記録する関数
 def send_to_sheet(user, result, streak):
