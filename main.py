@@ -3,7 +3,7 @@ import os
 from flask import Flask, request, jsonify
 
 # スプレッドシートのWebhook URL（GASのURL）
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzJIRrVnxud7pZgbi2DhnhxNxbkApJEmRupIeU5hOTajidM1GFwisoWFgr-ACk0Zjo/exec"
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwsrQfgBsSsqgfzy-Ku5cmF8lp8PVPEhCT1eJkN9RK1XeoLaj3PftkjEjpf4iMlXbHy/exec"
 
 # スプレッドシートに記録する関数
 def send_to_sheet(user, result):
