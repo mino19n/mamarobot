@@ -2,6 +2,14 @@ import requests
 import os
 from flask import Flask, request, jsonify
 
+# スプレッドシートのWebhook URL（GASのURL）
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwrmaU0rHIj2a93pgNKn-Qf-BY5cOjEMZju39Ugm-GK35KGIdEqhBE9vhupGw4-5jSR/exec"
+
+# スプレッドシートに記録する関数
+def send_to_sheet(user, task, result):
+    data = {"user": user, "task": task, "result": result}
+    requests.post(SHEET_WEBHOOK_URL, json=data)
+
 app = Flask(__name__)
 
 CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
@@ -85,6 +93,8 @@ def webhook():
                         user_name = get_user_name(user_id)
                         group_message = f"{user_name}がタスクを完了しました！"
                         send_message_to_group(group_message)
+                        # 記録する
+                        send_to_sheet(user_id, task_name, user_message)
                 
                 elif user_message == "まだだった…":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
