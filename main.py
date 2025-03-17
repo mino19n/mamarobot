@@ -168,44 +168,44 @@ def webhook():
                     send_reply(reply_token, messages)
                 
                 if user_message == "おわった！":
-                send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
+                    send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
             
-                if user_id:
-                    user_name = get_user_name(user_id)
-                    streak = count_consecutive_days(user_name)  # 連続日数を取得
-                    
-                    group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
-                    send_message_to_group([{"type": "text", "text": group_message}])
-            
-                    # スプレッドシートに記録
-                    send_to_sheet(user_name, "タスク完了", streak)
-            
-                    # 宝箱の閾値チェック
-                    treasure_milestones = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65]
-                    if streak in treasure_milestones:
-                        send_message_to_group([
-                            {"type": "text", "text": f"{user_name}は{streak}日連続達成！🎉"},
-                            {"type": "image", "originalContentUrl": "https://example.com/treasure.gif", "previewImageUrl": "https://example.com/treasure.gif"},
-                            {
-                                "type": "template",
-                                "altText": "宝箱を開ける！",
-                                "template": {
-                                    "type": "buttons",
-                                    "text": "おめでとう！宝箱を開けよう🎁",
-                                    "actions": [
-                                        {"type": "postback", "label": "宝箱を開ける！", "data": f"open_treasure,{user_id}"}
-                                    ],
-                                },
-                            },
-                        ])
-                    
                     if user_id:
                         user_name = get_user_name(user_id)
-                        streak = count_consecutive_days(user_name)  # 🔥 連続日数を計算
+                        streak = count_consecutive_days(user_name)  # 連続日数を取得
+                        
                         group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
-                        send_message_to_group(group_message)
+                        send_message_to_group([{"type": "text", "text": group_message}])
+                
                         # スプレッドシートに記録
-                        send_to_sheet(user_name, user_message, streak)  # 🔥 修正
+                        send_to_sheet(user_name, "タスク完了", streak)
+                
+                        # 宝箱の閾値チェック
+                        treasure_milestones = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65]
+                        if streak in treasure_milestones:
+                            send_message_to_group([
+                                {"type": "text", "text": f"{user_name}は{streak}日連続達成！🎉"},
+                                {"type": "image", "originalContentUrl": "https://example.com/treasure.gif", "previewImageUrl": "https://example.com/treasure.gif"},
+                                {
+                                    "type": "template",
+                                    "altText": "宝箱を開ける！",
+                                    "template": {
+                                        "type": "buttons",
+                                        "text": "おめでとう！宝箱を開けよう🎁",
+                                        "actions": [
+                                            {"type": "postback", "label": "宝箱を開ける！", "data": f"open_treasure,{user_id}"}
+                                        ],
+                                    },
+                                },
+                            ])
+                        
+                        if user_id:
+                            user_name = get_user_name(user_id)
+                            streak = count_consecutive_days(user_name)  # 🔥 連続日数を計算
+                            group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
+                            send_message_to_group(group_message)
+                            # スプレッドシートに記録
+                            send_to_sheet(user_name, user_message, streak)  # 🔥 修正
                 
                 elif user_message == "まだだった…":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
