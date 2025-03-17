@@ -1,8 +1,26 @@
 import requests
 import os
 import datetime
+import random
 from flask import Flask, request, jsonify
 from utils import count_consecutive_days  # 祝日対応の連続日数計算
+
+# 連続達成日数ごとの確率テーブル
+streak_probabilities = {
+    5:  {"1等": 2, "2等": 3, "3等": 5, "4等": 10, "5等": 80},
+    10: {"1等": 2, "2等": 3, "3等": 5, "4等": 15, "5等": 75},
+    15: {"1等": 2, "2等": 3, "3等": 5, "4等": 17, "5等": 73},
+    20: {"1等": 2, "2等": 3, "3等": 5, "4等": 20, "5等": 70},
+    25: {"1等": 2, "2等": 3, "3等": 5, "4等": 22, "5等": 68},
+    30: {"1等": 4, "2等": 5, "3等": 31, "4等": 30, "5等": 30},
+    35: {"1等": 4, "2等": 5, "3等": 7, "4等": 34, "5等": 60},
+    40: {"1等": 4, "2等": 5, "3等": 7, "4等": 34, "5等": 50},
+    45: {"1等": 4, "2等": 5, "3等": 7, "4等": 28, "5等": 56},
+    50: {"1等": 4, "2等": 5, "3等": 7, "4等": 34, "5等": 50},
+    55: {"1等": 10, "2等": 14, "3等": 26, "4等": 30, "5等": 20},
+    60: {"1等": 90, "2等": 5, "3等": 3, "4等": 1.5, "5等": 0.5},
+    65: {"1等": 100, "2等": 0, "3等": 0, "4等": 0, "5等": 0}
+}
 
 # スプレッドシートのWebhook URL（GASのURL）
 SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzkHPpqJMJ14ZSDEiXWoN6iUZwDZ3ahagRLSMyCVyvMxv8PGzsV0Buqyul9zr2FLr0T/exec"
@@ -11,6 +29,46 @@ SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzkHPpqJMJ14ZSDEiXW
 def send_to_sheet(user, result, streak):
     data = {"user": user, "result": result, "streak": streak}  # 🔥 連続日数も記録
     requests.post(SHEET_WEBHOOK_URL, json=data)
+
+# 抽選を実行
+def draw_treasure(user, streak):
+    global user_probabilities
+
+    # 連続日数に対応する確率を取得（デフォルトは 5 日の確率）
+    probabilities = streak_probabilities.get(streak, streak_probabilities[5])
+
+    # 抽選処理
+    draw = random.uniform(0, 100)  # 0～100のランダムな値を取得
+    cumulative = 0
+    result = "5等"  # デフォルトは5等
+    for rank, prob in probabilities.items():
+        cumulative += prob
+        if draw <= cumulative:
+            result = rank
+            break
+
+    # 結果メッセージと画像を決定
+    images = {
+        "1等": "https://example.com/prize1.png",
+        "2等": "https://example.com/prize2.png",
+        "3等": "https://example.com/prize3.png",
+        "4等": "https://example.com/prize4.png",
+        "5等": "https://example.com/prize5.png"
+    }
+    message = f"おめでとう！{user}は{result}が当たったよ🎉"
+
+    send_message_to_group([
+        {"type": "text", "text": message},
+        {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
+    ])
+
+    # 結果をスプレッドシートに記録
+    send_to_sheet(user, result)
+
+    # 1等なら確率をリセット（5日目の確率に戻す）
+    if result == "1等":
+        user_probabilities[user] = streak_probabilities[5]
+
 
 app = Flask(__name__)
 
