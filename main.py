@@ -61,8 +61,8 @@ def webhook():
                     messages = [
                         {
                             "type": "image",
-                            "originalContentUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/sample.png",
-                            "previewImageUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/sample.png",
+                            "originalContentUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/task.png",
+                            "previewImageUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/task.png",
                         },
                         {
                             "type": "template",
