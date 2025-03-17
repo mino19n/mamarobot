@@ -1,6 +1,16 @@
 import requests
 import os
+import datetime
 from flask import Flask, request, jsonify
+from utils import count_consecutive_days  # 祝日対応の連続日数計算
+
+# スプレッドシートのWebhook URL（GASのURL）
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzkHPpqJMJ14ZSDEiXWoN6iUZwDZ3ahagRLSMyCVyvMxv8PGzsV0Buqyul9zr2FLr0T/exec"
+
+# スプレッドシートに記録する関数
+def send_to_sheet(user, result, streak):
+    data = {"user": user, "result": result, "streak": streak}  # 🔥 連続日数も記録
+    requests.post(SHEET_WEBHOOK_URL, json=data)
 
 app = Flask(__name__)
 
@@ -35,6 +45,15 @@ def send_reply(reply_token, messages):
     }
     payload = {"replyToken": reply_token, "messages": messages}
     requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
+
+# スプレッドシートから達成日データを取得する関数
+def get_user_task_dates(user):
+    response = requests.get(SHEET_WEBHOOK_URL)
+    if response.status_code == 200:
+        data = response.json()
+        user_records = data.get(user, [])
+        return [datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in user_records]
+    return []
 
 @app.route("/", methods=["GET"])
 def home():
@@ -81,10 +100,14 @@ def webhook():
                 
                 elif user_message == "おわった！":
                     send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
+                    
                     if user_id:
                         user_name = get_user_name(user_id)
-                        group_message = f"{user_name}がタスクを完了しました！"
+                        streak = count_consecutive_days(user_name)  # 🔥 連続日数を計算
+                        group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
                         send_message_to_group(group_message)
+                        # スプレッドシートに記録
+                        send_to_sheet(user_name, user_message, streak)  # 🔥 修正
                 
                 elif user_message == "まだだった…":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
