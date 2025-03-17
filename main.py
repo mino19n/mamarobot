@@ -57,15 +57,26 @@ def draw_treasure(user, streak):
     }
     message = f"おめでとう！{user}は{result}が当たったよ🎉"
 
-    send_message_to_group([
+    # **ユーザーの user_id を取得**
+    user_id = get_user_id(user)  # ユーザー ID を取得する関数（仮）
+
+    # **ユーザー個別に送信**
+    send_reply(user_id, [
         {"type": "text", "text": message},
         {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
     ])
 
-    # 結果をスプレッドシートに記録
+    # **グループに通知**
+    group_message = f"{user} が {result} を当てました！🎊"
+    send_message_to_group([
+        {"type": "text", "text": group_message},
+        {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
+    ])
+
+    # **結果をスプレッドシートに記録**
     send_to_sheet(user, result)
 
-    # 1等なら確率をリセット（5日目の確率に戻す）
+    # **1等なら確率をリセット**
     if result == "1等":
         user_probabilities[user] = streak_probabilities[5]
 
@@ -158,6 +169,26 @@ def webhook():
                 
                 elif user_message == "おわった！":
                     send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
+                    print(f"User ID: {user_id}")
+                    
+                    # 連続達成日数が特定の閾値（5, 10, 15...）に達したら宝箱を送る
+                    treasure_milestones = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65]
+                    if streak in treasure_milestones:
+                        send_message_to_group([
+                            {"type": "text", "text": f"{user_name}は{streak}日連続達成！🎉"},
+                            {"type": "image", "originalContentUrl": "https://example.com/treasure.gif", "previewImageUrl": "https://example.com/treasure.gif"},
+                            {
+                                "type": "template",
+                                "altText": "宝箱を開ける！",
+                                "template": {
+                                    "type": "buttons",
+                                    "text": "おめでとう！宝箱を開けよう🎁",
+                                    "actions": [
+                                        {"type": "postback", "label": "宝箱を開ける！", "data": f"open_treasure,{user_id}"}
+                                    ],
+                                },
+                            },
+                        ])
                     
                     if user_id:
                         user_name = get_user_name(user_id)
@@ -172,8 +203,43 @@ def webhook():
                 
                 else:
                     send_reply(reply_token, [{"type": "text", "text": f"あなたのメッセージ: {user_message}"}])
-    
+
+        elif event["type"] == "postback":
+        data = event["postback"]["data"]
+            if data.startswith("open_treasure"):
+                _, user_id = data.split(",")
+                user_name = get_user_name(user_id)
+                streak = count_consecutive_days(user_name)  # 連続日数を取得
+                draw_treasure(user_name, streak)  # 抽選処理
+                
     return jsonify({"status": "ok"}), 200
+    
+# 宝箱を開けるハンドラ
+@app.route("/treasure", methods=["POST"])
+def open_treasure():
+    data = request.json
+    user_id = data["user_id"]
+    user_name = data["user_name"]
+    
+    # 連続日数を取得
+    streak = get_user_streak(user_id)  
+
+    # 抽選処理
+    result = draw_treasure(streak)
+
+    # 抽選結果をスプレッドシートに記録
+    record_treasure_result(user_id, user_name, streak, result)
+
+    # 1等が当たったら確率リセット
+    if result == "1等":
+        reset_user_probability(user_id)
+
+    # 画像とメッセージを送信
+    send_treasure_result(user_id, result)
+
+    return jsonify({"status": "success", "result": result})
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
