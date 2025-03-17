@@ -94,7 +94,7 @@ def webhook():
                         group_message = f"{user_name}がタスクを完了しました！"
                         send_message_to_group(group_message)
                         # 記録する
-                        send_to_sheet(user_id, user_message)
+                        send_to_sheet(user_name, user_message)
                 
                 elif user_message == "まだだった…":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
