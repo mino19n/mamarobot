@@ -1,5 +1,6 @@
 import datetime
 import holidays
+from datetime import datetime, timedelta
 
 jp_holidays = holidays.Japan()
 
@@ -21,7 +22,8 @@ def count_consecutive_days(dates):
     last_date = dates[0]  # 直近の達成日
 
     for i in range(1, len(dates)):
-        next_date = last_date - datetime.timedelta(days=1)
+        last_date = datetime.strptime(last_date, "%Y-%m-%d")  # 例: "2025-03-17" の場合
+        next_date = last_date - timedelta(days=1)
 
         while not is_weekday(next_date):  
             next_date -= datetime.timedelta(days=1)
