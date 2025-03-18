@@ -2,7 +2,7 @@ import requests
 import os
 import datetime
 import random
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, abort
 from utils import count_consecutive_days  # 祝日対応の連続日数計算
 from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import MessagingApi
@@ -306,4 +306,5 @@ def open_treasure():
     return jsonify({"status": "success", "result": result})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.getenv("PORT", 8080))  # 環境変数 PORT を取得（デフォルトは8080）
+    app.run(host="0.0.0.0", port=port)
