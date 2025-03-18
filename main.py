@@ -104,7 +104,7 @@ def send_message_to_group(message):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
     }
-    payload = {"to": GROUP_ID, "messages": [{"type": "text", "text": message}]}
+    payload = {"to": GROUP_ID, "messages": message}
     requests.post(url, json=payload, headers=headers)
 
 # 個別に返信する関数
@@ -203,7 +203,7 @@ def webhook():
                             group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
                             send_message_to_group(group_message)
                             # スプレッドシートに記録
-                            send_to_sheet(user_name, user_message, streak)  # 🔥 修正
+                            send_to_sheet(user_name, result, streak)  # 🔥 修正
                 
                 elif user_message == "まだだった…":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
