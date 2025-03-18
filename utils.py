@@ -1,16 +1,11 @@
 import datetime
 import holidays
 from datetime import datetime, timedelta
-
 jp_holidays = holidays.Japan()
 
 def is_weekday(date):
     """土日・祝日を除いた平日かどうかを判定"""
     return date.weekday() < 5 and date not in jp_holidaysimport datetime
-import holidays
-from datetime import datetime, timedelta
-
-jp_holidays = holidays.Japan()
 
 def count_consecutive_days(dates):
     """
