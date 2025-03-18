@@ -1,4 +1,5 @@
-flask
+Flask
 requests
 holidays
-line-bot-sdk
+line-bot-sdk>=3.5.0  # 最新バージョンを指定
+python-dotenv
