@@ -27,7 +27,7 @@ streak_probabilities = {
 }
 
 # スプレッドシートのWebhook URL（GASのURL）
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzkHPpqJMJ14ZSDEiXWoN6iUZwDZ3ahagRLSMyCVyvMxv8PGzsV0Buqyul9zr2FLr0T/exec"
+SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxFpZk9UwpbR6QSXgvIshdx3zIuVZ7g3Z98UfBJrcMKqnQZWr4jfP9ccvsjaw0YlzA-/exec"
 
 # スプレッドシートに記録する関数
 def send_to_sheet(user, result, streak):
