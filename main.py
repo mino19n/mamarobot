@@ -172,6 +172,14 @@ def webhook():
                     if user_id:
                         user_name = get_user_name(user_id)
                         streak = count_consecutive_days(user_name)  # 連続日数を取得
+
+                        if streak == 0:  # 最初は1からスタート
+                            streak = 1
+                        else:
+                            streak += 1
+                    
+                        # E列に連続日数を更新
+                        sheet.update_cell(len(data), 5, streak)
                         
                         group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
                         send_message_to_group([{"type": "text", "text": group_message}])
@@ -241,17 +249,6 @@ def open_treasure():
     send_treasure_result(user_id, result)
 
     return jsonify({"status": "success", "result": result})
-
-# スプレッドシートからデータ取得後に表示
-data = sheet.get_all_values()
-print("取得データ:", data)  # 取得した全データを表示
-
-# 最新の連続日数を取得
-最終行 = len(data)  # 最終行のインデックス
-連続日数 = int(sheet.cell(最終行, 5).value)  # E列（5番目）
-
-print("連続日数:", 連続日数)  # 連続日数が正しく取得できているか表示
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
