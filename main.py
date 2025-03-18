@@ -105,7 +105,7 @@ def webhook():
                         user_name = get_user_name(user_id)
                         streak = count_consecutive_days(user_name)  # 🔥 連続日数を計算
                         group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
-                        send_message_to_group(group_message)
+                        send_message_to_group([{"type": "text", "text": group_message}])
                         # スプレッドシートに記録
                         send_to_sheet(user_name, user_message, streak)  # 🔥 修正
                 
