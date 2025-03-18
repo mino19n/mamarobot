@@ -10,30 +10,31 @@ def is_weekday(date):
 def count_consecutive_days(dates):
     """
     連続達成日数を計算（土日祝日はスキップ）
-    :param dates: 達成日（昇順リスト）
+    :param dates: 達成日（昇順リスト: 'YYYY-MM-DD' の文字列形式）
     :return: 連続日数
     """
     if not dates:
         return 0
 
-    dates = sorted(dates, reverse=True)  # 最新の日付からチェック
+    # 最新の日付からチェック
+    dates = sorted(dates, reverse=True)
+
+    # 文字列 → datetime に変換
+    last_date = datetime.datetime.strptime(dates[0], "%Y-%m-%d")
     count = 1
-    last_date = dates[0]  # 直近の達成日
 
     for i in range(1, len(dates)):
-        
-        from datetime import datetime, timedelta
-        # last_date を datetime オブジェクトに変換
-        last_date = datetime.strptime(last_date, "%Y-%m-%d")  # 例: "2025-03-17" の形式
-        next_date = last_date - timedelta(days=1)
+        next_date = last_date - datetime.timedelta(days=1)
 
+        # 土日・祝日はスキップ
         while not is_weekday(next_date):  
             next_date -= datetime.timedelta(days=1)
 
-        if dates[i] == next_date:
+        # 連続しているか判定
+        if datetime.datetime.strptime(dates[i], "%Y-%m-%d") == next_date:
             count += 1
-            last_date = next_date
-        elif is_weekday(next_date):
+            last_date = next_date  # 更新
+        else:
             break
 
     return count
