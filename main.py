@@ -34,6 +34,7 @@ def send_to_sheet(user, result, streak):
 # 抽選を実行
 def draw_treasure(user, streak):
     global user_probabilities
+    user_probabilities = {}
 
     # 連続日数に対応する確率を取得（デフォルトは 5 日の確率）
     probabilities = streak_probabilities.get(streak, streak_probabilities[5])
@@ -59,7 +60,7 @@ def draw_treasure(user, streak):
     message = f"おめでとう！{user}は{result}が当たったよ🎉"
 
     # **ユーザーの user_id を取得**
-    user_id = get_user_id(user)  # ユーザー ID を取得する関数（仮）
+    user_id = user 
 
     # **ユーザー個別に送信**
     send_reply(user_id, [
@@ -201,7 +202,7 @@ def webhook():
                             user_name = get_user_name(user_id)
                             streak = count_consecutive_days(user_name)  # 🔥 連続日数を計算
                             group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
-                            send_message_to_group(group_message)
+                            send_message_to_group([{"type": "text", "text": group_message}])
                             # スプレッドシートに記録
                                 result = request.json.get("result")  # 例: クライアントから受け取る場合
                                 if result is None:
