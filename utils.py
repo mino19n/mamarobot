@@ -41,5 +41,6 @@ def count_consecutive_days(dates):
         else:
             break
 
+    print(f"連続日数: {count}日")
     return count
 
