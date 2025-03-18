@@ -4,6 +4,39 @@ import datetime
 import random
 from flask import Flask, request, jsonify
 from utils import count_consecutive_days  # 祝日対応の連続日数計算
+from linebot import LineBotApi, WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, TextMessage, TextSendMessage
+
+app = Flask(__name__)
+
+# LINE設定
+LINE_CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN'
+LINE_CHANNEL_SECRET = 'YOUR_CHANNEL_SECRET'
+
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
+
+# ✅ /callbackエンドポイントを追加
+@app.route('/callback', methods=['POST'])
+def callback():
+    # LINEからの署名を取得
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+
+    try:
+        # イベント処理
+        handler.handle(body, signature)
+        print("イベントを処理しました！")
+    except InvalidSignatureError:
+        print("署名エラー")
+        return 'Invalid signature', 400
+    except Exception as e:
+        print(f"エラー: {e}")
+        return 'Error', 500
+
+    # 成功時にLINEに200 OKを返す
+    return 'OK', 200
 
 # グローバル変数で確率を管理
 user_probabilities = {}
