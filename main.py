@@ -212,14 +212,14 @@ def webhook():
                 
                 else:
                     send_reply(reply_token, [{"type": "text", "text": f"あなたのメッセージ: {user_message}"}])
-
-        elif event["type"] == "postback":
-        data = event["postback"]["data"]
-            if data.startswith("open_treasure"):
-                _, user_id = data.split(",")
-                user_name = get_user_name(user_id)
-                streak = count_consecutive_days(user_name)  # 連続日数を取得
-                draw_treasure(user_name, streak)  # 抽選処理
+                    
+            elif event["type"] == "postback":
+                data = event["postback"]["data"]
+                if data.startswith("open_treasure"):
+                    _, user_id = data.split(",")
+                    user_name = get_user_name(user_id)
+                    streak = count_consecutive_days(user_name)  # 連続日数を取得
+                    draw_treasure(user_name, streak)  # 抽選処理
                 
     return jsonify({"status": "ok"}), 200
     
