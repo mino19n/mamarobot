@@ -7,6 +7,7 @@ from utils import count_consecutive_days  # 祝日対応の連続日数計算
 
 # 連続達成日数ごとの確率テーブル
 streak_probabilities = {
+    1:  {"1等": 2, "2等": 3, "3等": 5, "4等": 10, "5等": 80},
     5:  {"1等": 2, "2等": 3, "3等": 5, "4等": 10, "5等": 80},
     10: {"1等": 2, "2等": 3, "3等": 5, "4等": 15, "5等": 75},
     15: {"1等": 2, "2等": 3, "3等": 5, "4等": 17, "5等": 73},
@@ -49,11 +50,11 @@ def draw_treasure(user, streak):
 
     # 結果メッセージと画像を決定
     images = {
-        "1等": "https://example.com/prize1.png",
-        "2等": "https://example.com/prize2.png",
-        "3等": "https://example.com/prize3.png",
-        "4等": "https://example.com/prize4.png",
-        "5等": "https://example.com/prize5.png"
+        "1等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/50en.png",
+        "2等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/100en.png",
+        "3等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/cake.png",
+        "4等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/aburasoba.jpg",
+        "5等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/supajyapo.png"
     }
     message = f"おめでとう！{user}は{result}が当たったよ🎉"
 
@@ -176,9 +177,6 @@ def webhook():
                         
                         group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
                         send_message_to_group([{"type": "text", "text": group_message}])
-                
-                        # スプレッドシートに記録
-                        send_to_sheet(user_name, "タスク完了", streak)
                 
                         # 宝箱の閾値チェック
                         treasure_milestones = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65]
