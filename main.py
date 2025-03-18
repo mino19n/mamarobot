@@ -148,24 +148,24 @@ def webhook():
     try:
         event_data = request.get_json()
         
-    for event in event_data.get("events", []):
-        event_type = event.get("type")
+        for event in event_data.get("events", []):
+            event_type = event.get("type")
+    
+            if event_type == "message" and "text" in event["message"]:
+                user_id = event["source"]["userId"]
+                message_text = event["message"]["text"]
+    
+                print(f"User: {user_id}, Message: {message_text}")
+    
+                # スプレッドシートに書き込み
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                sheet.append_row([now, message_text, user_id])
+    
+        return jsonify({"status": "ok"})
 
-        if event_type == "message" and "text" in event["message"]:
-            user_id = event["source"]["userId"]
-            message_text = event["message"]["text"]
-
-            print(f"User: {user_id}, Message: {message_text}")
-
-            # スプレッドシートに書き込み
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.append_row([now, message_text, user_id])
-
-    return jsonify({"status": "ok"})
-
-except Exception as e:
-    print(f"Error: {e}")
-    return jsonify({"status": "error", "message": str(e)})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"status": "error", "message": str(e)})
 
     data = request.json
     print("Received data:", data)
