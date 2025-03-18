@@ -13,8 +13,8 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 app = Flask(__name__)
 
 # LINE設定
-CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
-LINE_CHANNEL_SECRET = os.getenv("CHANNEL_SECRET")  # 環境変数から取得
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")  # 環境変数から取得
 
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
@@ -120,13 +120,12 @@ def draw_treasure(user_id, user_name, streak):
     # ✅ 結果をスプレッドシートに記録
     send_to_sheet(user_name, result, streak)
 
-CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
 GROUP_ID = "C0973bdef9d19444731d1ca0023f34ff3"  # 実際のグループIDに置き換える
 
 # ユーザーIDからユーザー名を取得する関数
 def get_user_name(user_id):
     url = f"https://api.line.me/v2/bot/profile/{user_id}"
-    headers = {"Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}"}
+    headers = {"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         profile = response.json()
@@ -138,7 +137,7 @@ def send_message_to_group(message):
     url = "https://api.line.me/v2/bot/message/push"
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
     }
     payload = {"to": GROUP_ID, "messages": message}
     requests.post(url, json=payload, headers=headers)
@@ -147,7 +146,7 @@ def send_message_to_group(message):
 def send_reply(reply_token, messages):
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}",
     }
     payload = {"replyToken": reply_token, "messages": messages}
     requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
