@@ -35,24 +35,36 @@ def send_to_sheet(user, result, streak):
     requests.post(SHEET_WEBHOOK_URL, json=data)
 
 # 抽選を実行
+# 抽選関数内ではリセットしない
 def draw_treasure(user_id, user_name, streak):
     global user_probabilities
-    user_probabilities = {}
 
-    # 連続日数に対応する確率を取得（デフォルトは 5 日の確率）
-    probabilities = streak_probabilities.get(streak, streak_probabilities[5])
+    # 初回時に確率をセット
+    if user_id not in user_probabilities:
+        user_probabilities[user_id] = streak_probabilities.get(5)
+
+    # 連続日数に応じた確率を取得
+    probabilities = streak_probabilities.get(streak, user_probabilities[user_id])
 
     # 抽選処理
-    draw = random.uniform(0, 100)  # 0～100のランダムな値を取得
+    draw = random.uniform(0, 100)
     cumulative = 0
-    result = "5等"  # デフォルトは5等
+    result = "5等"
+
     for rank, prob in probabilities.items():
         cumulative += prob
         if draw <= cumulative:
             result = rank
             break
 
-    # 結果メッセージと画像を決定
+    # 1等が出たら確率をリセット
+    if result == "1等":
+        user_probabilities[user_id] = streak_probabilities.get(5)
+
+    # スプレッドシートに記録
+    send_to_sheet(user_name, result, streak)
+
+    # 通知処理
     images = {
         "1等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/50en.png",
         "2等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/100en.png",
@@ -60,20 +72,21 @@ def draw_treasure(user_id, user_name, streak):
         "4等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/aburasoba.jpg",
         "5等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/supajyapo.png"
     }
-    message = f"おめでとう！{user}は{result}が当たったよ🎉"
+    message = f"おめでとう！{user_name}は{result}が当たったよ🎉"
 
-    # ✅ user_id を使用して個別通知
     send_reply(user_id, [
         {"type": "text", "text": message},
         {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
     ])
 
-    # ✅ グループ通知
+    # グループ通知
     group_message = f"{user_name} が {result} を当てました！🎊"
     send_message_to_group([
         {"type": "text", "text": group_message},
         {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
     ])
+
+
 
     # ✅ 結果をスプレッドシートに記録
     send_to_sheet(user_name, result, streak)
@@ -118,7 +131,7 @@ def send_reply(reply_token, messages):
     requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
 
 # スプレッドシートから達成日データを取得する関数
-def get_user_task_dates(user):
+def get_user_task_dates(user_id):
     response = requests.get(SHEET_WEBHOOK_URL)
     if response.status_code == 200:
         data = response.json()
@@ -133,13 +146,8 @@ def home():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
-    event_data = request.get_json()
-
-    # スプレッドシート認証（追加）
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPES)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(SPREADSHEET_ID).worksheet("シート1")
-
+        event_data = request.get_json()
+        
     for event in event_data.get("events", []):
         event_type = event.get("type")
 
@@ -158,6 +166,7 @@ def webhook():
 except Exception as e:
     print(f"Error: {e}")
     return jsonify({"status": "error", "message": str(e)})
+
     data = request.json
     print("Received data:", data)
 
