@@ -11,10 +11,9 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage
 app = Flask(__name__)
 
 # LINE設定
-LINE_CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN'
-LINE_CHANNEL_SECRET = 'YOUR_CHANNEL_SECRET'
+CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
+LINE_CHANNEL_SECRET = os.getenv("CHANNEL_SECRET")  # 環境変数から取得
 
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 # ✅ /callbackエンドポイントを追加
@@ -94,9 +93,6 @@ def draw_treasure(user_id, user_name, streak):
     if result == "1等":
         user_probabilities[user_id] = streak_probabilities.get(5)
 
-    # スプレッドシートに記録
-    send_to_sheet(user_name, result, streak)
-
     # 通知処理
     images = {
         "1等": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/50en.png",
@@ -119,17 +115,8 @@ def draw_treasure(user_id, user_name, streak):
         {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
     ])
 
-
-
     # ✅ 結果をスプレッドシートに記録
     send_to_sheet(user_name, result, streak)
-    
-    # ✅ 1等なら確率をリセット
-    if result == "1等":
-        user_probabilities[user_id] = streak_probabilities[5]
-
-
-app = Flask(__name__)
 
 CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
 GROUP_ID = "C0973bdef9d19444731d1ca0023f34ff3"  # 実際のグループIDに置き換える
@@ -164,12 +151,13 @@ def send_reply(reply_token, messages):
     requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
 
 # スプレッドシートから達成日データを取得する関数
-def get_user_task_dates(user_id):
+def get_user_task_dates(user_id, user_name=None):
     response = requests.get(SHEET_WEBHOOK_URL)
     if response.status_code == 200:
         data = response.json()
-        user_records = data.get(user_id, [])  # user_idで管理
-        return [datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in user_records]
+        if user_name:
+            return data.get(user_id, []) or data.get(user_name, [])
+        return data.get(user_id, [])
     return []
 
 @app.route("/", methods=["GET"])
@@ -191,7 +179,7 @@ def webhook():
                 print(f"User: {user_id}, Message: {message_text}")
     
                 # スプレッドシートに書き込み
-                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 sheet.append_row([now, message_text, user_id])
     
         return jsonify({"status": "ok"})
@@ -199,9 +187,6 @@ def webhook():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"status": "error", "message": str(e)})
-
-    data = request.json
-    print("Received data:", data)
 
     if "events" in data:
         for event in data["events"]:
@@ -235,7 +220,7 @@ def webhook():
                             },
                         },
                     ]
-                    send_reply(reply_token, messages)
+                    send_message_to_group(messages)
                 
                 if user_message == "おわった！":
                     send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
@@ -311,10 +296,6 @@ def open_treasure():
 
     # 抽選結果をスプレッドシートに記録
     record_treasure_result(user_id, user_name, streak, result)
-
-    # 1等が当たったら確率リセット
-    if result == "1等":
-        reset_user_probability(user_id)
 
     # 画像とメッセージを送信
     send_treasure_result(user_id, result)
