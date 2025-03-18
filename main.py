@@ -7,14 +7,14 @@ from utils import count_consecutive_days  # 祝日対応の連続日数計算
 from linebot.v3.messaging import MessagingApi
 from linebot.v3.webhook import WebhookHandler, WebhookParser
 
+# LINE設定
+CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
+LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")  # 環境変数から取得
+
 line_bot_api = MessagingApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 app = Flask(__name__)
-
-# LINE設定
-CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
-LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")  # 環境変数から取得
 
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
