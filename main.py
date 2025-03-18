@@ -242,6 +242,15 @@ def open_treasure():
 
     return jsonify({"status": "success", "result": result})
 
+# スプレッドシートからデータ取得後に表示
+data = sheet.get_all_values()
+print("取得データ:", data)  # 取得した全データを表示
+
+# 最新の連続日数を取得
+最終行 = len(data)  # 最終行のインデックス
+連続日数 = int(sheet.cell(最終行, 5).value)  # E列（5番目）
+
+print("連続日数:", 連続日数)  # 連続日数が正しく取得できているか表示
 
 
 if __name__ == "__main__":
