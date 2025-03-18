@@ -32,7 +32,7 @@ def send_to_sheet(user, result, streak):
     requests.post(SHEET_WEBHOOK_URL, json=data)
 
 # 抽選を実行
-def draw_treasure(user, streak):
+def draw_treasure(user_id, user_name, streak):
     global user_probabilities
     user_probabilities = {}
 
@@ -59,28 +59,25 @@ def draw_treasure(user, streak):
     }
     message = f"おめでとう！{user}は{result}が当たったよ🎉"
 
-    # **ユーザーの user_id を取得**
-    user_id = user 
-
-    # **ユーザー個別に送信**
+    # ✅ user_id を使用して個別通知
     send_reply(user_id, [
         {"type": "text", "text": message},
         {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
     ])
 
-    # **グループに通知**
-    group_message = f"{user} が {result} を当てました！🎊"
+    # ✅ グループ通知
+    group_message = f"{user_name} が {result} を当てました！🎊"
     send_message_to_group([
         {"type": "text", "text": group_message},
         {"type": "image", "originalContentUrl": images[result], "previewImageUrl": images[result]}
     ])
 
-    # **結果をスプレッドシートに記録**
-    send_to_sheet(user, result)
-
-    # **1等なら確率をリセット**
+    # ✅ 結果をスプレッドシートに記録
+    send_to_sheet(user_name, result, streak)
+    
+    # ✅ 1等なら確率をリセット
     if result == "1等":
-        user_probabilities[user] = streak_probabilities[5]
+        user_probabilities[user_id] = streak_probabilities[5]
 
 
 app = Flask(__name__)
@@ -122,7 +119,7 @@ def get_user_task_dates(user):
     response = requests.get(SHEET_WEBHOOK_URL)
     if response.status_code == 200:
         data = response.json()
-        user_records = data.get(user, [])
+        user_records = data.get(user_id, [])  # user_idで管理
         return [datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in user_records]
     return []
 
