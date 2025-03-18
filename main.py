@@ -34,7 +34,7 @@ def send_message_to_group(message):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
     }
-    payload = {"to": GROUP_ID, "messages": [{"type": "text", "text": message}]}
+        payload = {"to": GROUP_ID, "messages": message}
     requests.post(url, json=payload, headers=headers)
 
 # 個別に返信する関数
@@ -98,7 +98,7 @@ def webhook():
                     ]
                     send_reply(reply_token, messages)
                 
-                elif user_message == "おわった！":
+                if user_message == "おわった！":
                     send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
                     
                     if user_id:
