@@ -21,22 +21,22 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 # ✅ /callbackエンドポイントを追加
 @app.route('/callback', methods=['POST'])
 def callback():
-    # LINEからの署名を取得
+    print("Webhookを受信しました！")  # ← リクエスト受信時にログ出力
+
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
+    
+    print("受信データ:", body)  # ← LINEから送られたデータをログ出力
 
     try:
-        # イベント処理
         handler.handle(body, signature)
-        print("イベントを処理しました！")
     except InvalidSignatureError:
         print("署名エラー")
-        return 'Invalid signature', 400
+        abort(400)
     except Exception as e:
         print(f"エラー: {e}")
         return 'Error', 500
 
-    # 成功時にLINEに200 OKを返す
     return 'OK', 200
 
 # グローバル変数で確率を管理
