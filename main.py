@@ -34,7 +34,7 @@ def send_message_to_group(message):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
     }
-        payload = {"to": GROUP_ID, "messages": message}
+    payload = {"to": GROUP_ID, "messages": message}
     requests.post(url, json=payload, headers=headers)
 
 # 個別に返信する関数
