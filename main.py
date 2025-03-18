@@ -203,7 +203,11 @@ def webhook():
                             group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
                             send_message_to_group(group_message)
                             # スプレッドシートに記録
-                            send_to_sheet(user_name, streak)  # 🔥 修正
+                                result = request.json.get("result")  # 例: クライアントから受け取る場合
+                                if result is None:
+                                    result = "default_value"  # 適切なデフォルト値を設定（例："未定義" など）
+                            
+                                send_to_sheet(user_name, result, streak)
                 
                 elif user_message == "まだだった…":
                     send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
