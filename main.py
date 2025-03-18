@@ -4,9 +4,8 @@ import datetime
 import random
 from flask import Flask, request, jsonify, abort
 from utils import count_consecutive_days  # 祝日対応の連続日数計算
-from linebot.v3 import WebhookHandler
 from linebot.v3.messaging import MessagingApi
-from linebot.v3.webhooks import WebhookParser
+from linebot.v3.webhook import WebhookHandler, WebhookParser
 
 line_bot_api = MessagingApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
