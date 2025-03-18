@@ -61,4 +61,5 @@ def home():
     return "LINE Bot is running!"
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 8080))  # 環境変数 PORT を取得（デフォルトは8080）
+    app.run(host="0.0.0.0", port=port)
