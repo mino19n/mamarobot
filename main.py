@@ -1,121 +1,138 @@
-import requests
-import os
-import datetime
-from flask import Flask, request, jsonify
-from utils import count_consecutive_days  # 祝日対応の連続日数計算
+const SHEET_ID = '1gIMniAC5igFdaOFMhs8AyEjZ7KPUrd41Ca2LBMqZ0o8';  // あなたのスプレッドシートIDに置き換え
+const CHANNEL_ACCESS_TOKEN = "Qg6HS96zcEbuDufwoy/X9kKBKuYNgtvK85Q7FWuF67H+QpAirvRL2aXVDBIAjkDLapjyne+5SuM/g0O8kj0xKpcP8imALNKFMenRBnjFgND2gUPSf0Bkie0UYYfJ9S2fxjMhRLObVZ2oLlcZBvpONwdB04t89/1O/w1cDnyilFU=";
+const GROUP_ID = 'C0973bdef9d19444731d1ca0023f34ff3';  // ← グループIDをここに記載
 
-# スプレッドシートのWebhook URL（GASのURL）
-SHEET_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzkHPpqJMJ14ZSDEiXWoN6iUZwDZ3ahagRLSMyCVyvMxv8PGzsV0Buqyul9zr2FLr0T/exec"
+// ユーザー名を取得する関数
+function getUserName(userId) {
+  const url = `https://api.line.me/v2/bot/profile/${userId}`;
 
-# スプレッドシートに記録する関数
-def send_to_sheet(user, result, streak):
-    data = {"user": user, "result": result, "streak": streak}  # 🔥 連続日数も記録
-    requests.post(SHEET_WEBHOOK_URL, json=data)
+  const headers = {
+    "Authorization": `Bearer ${CHANNEL_ACCESS_TOKEN}`
+  };
 
-app = Flask(__name__)
+  const options = {
+    method: "get",
+    headers: headers,
+    muteHttpExceptions: true
+  };
 
-CHANNEL_ACCESS_TOKEN = os.getenv("CHANNEL_ACCESS_TOKEN")  # 環境変数からアクセストークンを取得
-GROUP_ID = "C0973bdef9d19444731d1ca0023f34ff3"  # 実際のグループIDに置き換える
+  const response = UrlFetchApp.fetch(url, options);
 
-# ユーザーIDからユーザー名を取得する関数
-def get_user_name(user_id):
-    url = f"https://api.line.me/v2/bot/profile/{user_id}"
-    headers = {"Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}"}
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        profile = response.json()
-        return profile.get("displayName", "不明なユーザー")
-    return "不明なユーザー"
+  if (response.getResponseCode() === 200) {
+    const data = JSON.parse(response.getContentText());
+    return data.displayName;  // ユーザー名を返す
+  } else {
+    Logger.log(`ユーザー名取得失敗: ${response.getContentText()}`);
+    return "不明なユーザー";  // エラー時はデフォルト表示
+  }
+}
 
-# グループにメッセージを送る関数（pushメッセージ）
-def send_message_to_group(message):
-    url = "https://api.line.me/v2/bot/message/push"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
+
+function doPost(e) {
+  // 📌 Webhookのデータをログで確認
+  Logger.log(e ? e.postData.contents : 'データなし');
+  try {
+      const params = e ? JSON.parse(e.postData.contents) : null;
+
+    if (params && params.events && params.events.length > 0) {
+      const event = params.events[0];
+
+
+      // ユーザーIDとメッセージ取得
+      const replyToken = event.replyToken;
+      const userId = event.source.userId;
+      const messageText = event.message.text;
+
+      // ユーザー名を取得
+      const userName = getUserName(userId);  // 🔥 ユーザーIDから名前を取得
+
+      // 日付と時間を取得
+      const date = new Date();
+      const time = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+      // スプレッドシートに記録
+      const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("シート");
+
+      if (messageText === "おわったよ！" || messageText === "まだだった…") {
+        const row = [date.toLocaleDateString('ja-JP'), time, messageText, userName];  // ✅ ユーザー名で記録
+
+        // LINEに返信
+        const replyText = (messageText === "おわったよ！") ? "よくできました！" : "今からしようね！";
+        sendReply(replyToken, replyText);
+
+        // ✅ 「おわったよ！」ならスプレッドシートに記録してグループに通知
+        if (messageText === "おわったよ！") {
+          /*
+          const groupMessage = `${userName}がやることを完了しました！🎉`;
+          sendGroupMessage(GROUP_ID, groupMessage);
+          */
+
+          sheet.appendRow(row);
+        }
+
+
+      }
     }
-    payload = {"to": GROUP_ID, "messages": message}
-    requests.post(url, json=payload, headers=headers)
+  } catch (error) {
+    Logger.log("エラー: " + error);
+  }
+}
 
-# 個別に返信する関数
-def send_reply(reply_token, messages):
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {CHANNEL_ACCESS_TOKEN}",
-    }
-    payload = {"replyToken": reply_token, "messages": messages}
-    requests.post("https://api.line.me/v2/bot/message/reply", json=payload, headers=headers)
+function sendReply(replyToken, messageText) {
+ 
+  const url = 'https://api.line.me/v2/bot/message/reply';
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`
+  };
 
-# スプレッドシートから達成日データを取得する関数
-def get_user_task_dates(user):
-    response = requests.get(SHEET_WEBHOOK_URL)
-    if response.status_code == 200:
-        data = response.json()
-        user_records = data.get(user, [])
-        return [datetime.datetime.strptime(d, "%Y-%m-%d").date() for d in user_records]
-    return []
+  // 🔥 LINEは配列でメッセージを送信する必要がある
+  const messages = [{ type: 'text', text: messageText }];
 
-@app.route("/", methods=["GET"])
-def home():
-    return "LINE Bot is running!"
+  const body = JSON.stringify({
+    replyToken: replyToken,
+    messages: messages
+  });
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    data = request.json
-    print("Received data:", data)
+  const options = {
+    method: 'post',
+    headers: headers,
+    payload: body,
+    muteHttpExceptions: true
+  };
 
-    if "events" in data:
-        for event in data["events"]:
-            if event["type"] == "message" and "text" in event["message"]:
-                source_type = event["source"]["type"]
-                reply_token = event["replyToken"]
-                user_message = event["message"]["text"]
-                user_id = event["source"].get("userId")
-                
-                if source_type == "group":
-                    print("Message from group; no response.")
-                    continue  # グループ内のメッセージには一切反応しない
-                
-                if user_message == "タスク完了":
-                    messages = [
-                        {
-                            "type": "image",
-                            "originalContentUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/task.png",
-                            "previewImageUrl": "https://raw.githubusercontent.com/mino19n/mamarobot/main/images/task.png",
-                        },
-                        {
-                            "type": "template",
-                            "altText": "タスクの確認",
-                            "template": {
-                                "type": "buttons",
-                                "text": "やることはぜんぶおわりましたか？",
-                                "actions": [
-                                    {"type": "message", "label": "おわった！", "text": "おわった！"},
-                                    {"type": "message", "label": "まだだった…", "text": "まだだった…"},
-                                ],
-                            },
-                        },
-                    ]
-                    send_reply(reply_token, messages)
-                
-                if user_message == "おわった！":
-                    send_reply(reply_token, [{"type": "text", "text": "よくできました！"}])
-                    
-                    if user_id:
-                        user_name = get_user_name(user_id)
-                        streak = count_consecutive_days(user_name)  # 🔥 連続日数を計算
-                        group_message = f"{user_name}がタスクを完了しました！（{streak}日連続）"
-                        send_message_to_group([{"type": "text", "text": group_message}])
-                        # スプレッドシートに記録
-                        send_to_sheet(user_name, user_message, streak)  # 🔥 修正
-                
-                elif user_message == "まだだった…":
-                    send_reply(reply_token, [{"type": "text", "text": "今からしようね！"}])
-                
-                else:
-                    send_reply(reply_token, [{"type": "text", "text": f"あなたのメッセージ: {user_message}"}])
-    
-    return jsonify({"status": "ok"}), 200
+  const response = UrlFetchApp.fetch(url, options);
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+  if (response.getResponseCode() !== 200) {
+    Logger.log(`送信エラー: ${response.getContentText()}`);
+  }
+}
+
+/*
+// 📌 グループに通知を送信
+function sendGroupMessage(groupId, message) {
+  const url = 'https://api.line.me/v2/bot/message/push';
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`
+  };
+
+  const body = JSON.stringify({
+    to: groupId,
+    messages: [{ type: 'text', text: message }]
+  });
+
+  const options = {
+    method: 'post',
+    headers: headers,
+    payload: body,
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  if (response.getResponseCode() !== 200) {
+    Logger.log(`グループ通知エラー: ${response.getContentText()}`);
+  }
+}
+*/
