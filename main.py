@@ -62,10 +62,8 @@ function doPost(e) {
 
         // ✅ 「おわったよ！」ならスプレッドシートに記録してグループに通知
         if (messageText === "おわったよ！") {
-          /*
           const groupMessage = `${userName}がやることを完了しました！🎉`;
           sendGroupMessage(GROUP_ID, groupMessage);
-          */
 
           sheet.appendRow(row);
         }
@@ -108,7 +106,6 @@ function sendReply(replyToken, messageText) {
   }
 }
 
-/*
 // 📌 グループに通知を送信
 function sendGroupMessage(groupId, message) {
   const url = 'https://api.line.me/v2/bot/message/push';
@@ -135,4 +132,3 @@ function sendGroupMessage(groupId, message) {
     Logger.log(`グループ通知エラー: ${response.getContentText()}`);
   }
 }
-*/
