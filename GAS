@@ -1,0 +1,68 @@
+const SHEET_ID = '1gIMniAC5igFdaOFMhs8AyEjZ7KPUrd41Ca2LBMqZ0o8';  // あなたのスプレッドシートIDに置き換え
+
+function doPost(e) {
+  // 📌 Webhookのデータをログで確認
+  Logger.log(e ? e.postData.contents : 'データなし');
+  try {
+      const params = e ? JSON.parse(e.postData.contents) : null;
+
+    if (params && params.events && params.events.length > 0) {
+      const event = params.events[0];
+
+
+      // ユーザーIDとメッセージ取得
+      const replyToken = event.replyToken;
+      const userId = event.source.userId;
+      const messageText = event.message.text;
+
+      // 日付と時間を取得
+      const date = new Date();
+      const time = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+      // スプレッドシートに記録
+      const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("シート");
+
+      if (messageText === "はい" || messageText === "いいえ") {
+        const row = [date.toLocaleDateString('ja-JP'), time, messageText, userId];
+        sheet.appendRow(row);
+
+        // LINEに返信
+        const replyText = (messageText === "はい") ? "よくできました！" : "今からしようね！";
+        sendReply(replyToken, replyText);
+      }
+    }
+  } catch (error) {
+    Logger.log("エラー: " + error);
+  }
+}
+
+function sendReply(replyToken, messageText) {
+  const CHANNEL_ACCESS_TOKEN = "Qg6HS96zcEbuDufwoy/X9kKBKuYNgtvK85Q7FWuF67H+QpAirvRL2aXVDBIAjkDLapjyne+5SuM/g0O8kj0xKpcP8imALNKFMenRBnjFgND2gUPSf0Bkie0UYYfJ9S2fxjMhRLObVZ2oLlcZBvpONwdB04t89/1O/w1cDnyilFU=";
+  
+  const url = 'https://api.line.me/v2/bot/message/reply';
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`
+  };
+
+  // 🔥 LINEは配列でメッセージを送信する必要がある
+  const messages = [{ type: 'text', text: messageText }];
+
+  const body = JSON.stringify({
+    replyToken: replyToken,
+    messages: messages
+  });
+
+  const options = {
+    method: 'post',
+    headers: headers,
+    payload: body,
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+
+  if (response.getResponseCode() !== 200) {
+    Logger.log(`送信エラー: ${response.getContentText()}`);
+  }
+}
