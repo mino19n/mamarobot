@@ -16,14 +16,18 @@ function getUserName(userId) {
     muteHttpExceptions: true
   };
 
-  const response = UrlFetchApp.fetch(url, options);
-
-  if (response.getResponseCode() === 200) {
-    const data = JSON.parse(response.getContentText());
-    return data.displayName;  // ユーザー名を返す
-  } else {
-    Logger.log(`ユーザー名取得失敗: ${response.getContentText()}`);
-    return "不明なユーザー";  // エラー時はデフォルト表示
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() === 200) {
+      const data = JSON.parse(response.getContentText());
+      return data.displayName;
+    } else {
+      Logger.log(`ユーザー名取得失敗: ${response.getContentText()}`);
+      return "不明なユーザー";
+    }
+  } catch (error) {
+    Logger.log(`ユーザー名取得エラー: ${error}`);
+    return "不明なユーザー";
   }
 }
 
@@ -39,7 +43,7 @@ function updateStreak(userName) {
     if (data[i][3] === userName) {  // ユーザー名が一致
       if (data[i][2] === "おわったよ！") {  // 「おわったよ！」なら連続
         lastStreak = Number(data[i][4]) || 0;  // 直前の連続記録を取得
-        lastStreak++;  // 連続記録を+1
+        lastStreak = lastStreak === 0 ? 1 : lastStreak + 1;  // 初回は1から開始
       } else {  // 「いいえ」ならリセット
         lastStreak = 0;
       }
@@ -49,52 +53,51 @@ function updateStreak(userName) {
   return lastStreak;
 }
 
-
+// 📌 LINEのWebhookイベントを処理
 function doPost(e) {
   // 📌 Webhookのデータをログで確認
   Logger.log(e ? e.postData.contents : 'データなし');
   try {
       const params = e ? JSON.parse(e.postData.contents) : null;
 
-    if (params && params.events && params.events.length > 0) {
-      const event = params.events[0];
+    if (!params || !params.events || params.events.length === 0) return;
+    const event = params.events[0];
 
 
-      // ユーザーIDとメッセージ取得
-      const replyToken = event.replyToken;
-      const userId = event.source.userId;
-      const messageText = event.message.text;
+    // ユーザーIDとメッセージ取得
+    const replyToken = event.replyToken;
+    const userId = event.source.userId;
+    const messageText = event.message.text;
 
-      // ユーザー名を取得
-      const userName = getUserName(userId);  // 🔥 ユーザーIDから名前を取得
+    // ユーザー名を取得
+    const userName = getUserName(userId);  // 🔥 ユーザーIDから名前を取得
 
-      // 日付と時間を取得
-      const date = new Date();
-      const time = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    // 日付と時間を取得
+    const date = new Date();
+    const time = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
-      // スプレッドシートに記録
-      const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("シート");
+    // スプレッドシートに記録
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("シート");
 
-      if (messageText === "おわったよ！" || messageText === "まだだった…") {
-        const row = [date.toLocaleDateString('ja-JP'), time, messageText, userName];  // ✅ ユーザー名で記録
+    if (messageText === "おわったよ！" || messageText === "まだだった…") {
+      const row = [date.toLocaleDateString('ja-JP'), time, messageText, userName];  // ✅ ユーザー名で記録
 
-        // LINEに返信
-        const replyText = (messageText === "おわったよ！") ? "よくできました！" : "今からしようね！";
-        sendReply(replyToken, replyText);
+      // LINEに返信
+      const replyText = (messageText === "おわったよ！") ? "よくできました！" : "今からしようね！";
+      sendReply(replyToken, replyText);
 
-        // ✅ 「おわったよ！」ならスプレッドシートに記録してグループに通知
-        if (messageText === "おわったよ！") {
-           // ✅ 連続達成日数を計算
-           const streak = updateStreak(userName);  // 連続日数をカウント
-           
-           // 🎯 グループ通知メッセージに連続日数を追加表示
-           const groupMessage = `${userName}がやることを完了しました！🎉（${streak}日連続）`;
-           sendGroupMessage(GROUP_ID, groupMessage);
+      // ✅ 「おわったよ！」ならスプレッドシートに記録してグループに通知
+      if (messageText === "おわったよ！") {
+          // ✅ 連続達成日数を計算
+          const streak = updateStreak(userName);  // 連続日数をカウント
+          
+        // ✅ スプレッドシートに記録
+        row.push(streak);  // E列に連続日数を追加
+        sheet.appendRow(row);
 
-          // ✅ スプレッドシートに記録
-          row.push(streak);  // E列に連続日数を追加
-          sheet.appendRow(row);
-        }
+          // 🎯 グループ通知メッセージに連続日数を追加表示
+          const groupMessage = `${userName}がやることを完了しました！🎉（${streak}日連続）`;
+          sendGroupMessage(GROUP_ID, groupMessage);
       }
     }
   } catch (error) {
@@ -102,6 +105,7 @@ function doPost(e) {
   }
 }
 
+// 📌 LINEに返信
 function sendReply(replyToken, messageText) {
  
   const url = 'https://api.line.me/v2/bot/message/reply';
@@ -125,10 +129,13 @@ function sendReply(replyToken, messageText) {
     muteHttpExceptions: true
   };
 
-  const response = UrlFetchApp.fetch(url, options);
-
-  if (response.getResponseCode() !== 200) {
-    Logger.log(`送信エラー: ${response.getContentText()}`);
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) {
+      Logger.log(`返信エラー: ${response.getContentText()}`);
+      }
+  } catch (error) {
+    Logger.log(`返信処理エラー: ${error}`);
   }
 }
 
@@ -153,8 +160,12 @@ function sendGroupMessage(groupId, message) {
     muteHttpExceptions: true
   };
 
-  const response = UrlFetchApp.fetch(url, options);
-  if (response.getResponseCode() !== 200) {
-    Logger.log(`グループ通知エラー: ${response.getContentText()}`);
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() !== 200) {
+      Logger.log(`グループ通知エラー: ${response.getContentText()}`);
+    }
+  } catch (error) {
+    Logger.log(`グループ通知処理エラー: ${error}`);
   }
 }
