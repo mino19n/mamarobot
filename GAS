@@ -1,5 +1,6 @@
 const SHEET_ID = '1gIMniAC5igFdaOFMhs8AyEjZ7KPUrd41Ca2LBMqZ0o8';  // あなたのスプレッドシートIDに置き換え
 const CHANNEL_ACCESS_TOKEN = "Qg6HS96zcEbuDufwoy/X9kKBKuYNgtvK85Q7FWuF67H+QpAirvRL2aXVDBIAjkDLapjyne+5SuM/g0O8kj0xKpcP8imALNKFMenRBnjFgND2gUPSf0Bkie0UYYfJ9S2fxjMhRLObVZ2oLlcZBvpONwdB04t89/1O/w1cDnyilFU=";
+const GROUP_ID = 'C0973bdef9d19444731d1ca0023f34ff3';  // ← グループIDをここに記載
 
 // ユーザー名を取得する関数
 function getUserName(userId) {
@@ -24,6 +25,28 @@ function getUserName(userId) {
     Logger.log(`ユーザー名取得失敗: ${response.getContentText()}`);
     return "不明なユーザー";  // エラー時はデフォルト表示
   }
+}
+
+// 📌 連続達成日数をカウント
+function updateStreak(userName) {
+  const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("シート");
+  const data = sheet.getDataRange().getValues();
+
+  let lastStreak = 0;  // 直前の連続日数
+
+  // 最新のデータから連続日数を取得
+  for (let i = data.length - 1; i > 0; i--) {
+    if (data[i][3] === userName) {  // ユーザー名が一致
+      if (data[i][2] === "おわったよ！") {  // 「おわったよ！」なら連続
+        lastStreak = Number(data[i][4]) || 0;  // 直前の連続記録を取得
+        lastStreak++;  // 連続記録を+1
+      } else {  // 「いいえ」ならリセット
+        lastStreak = 0;
+      }
+      break;
+    }
+  }
+  return lastStreak;
 }
 
 
@@ -52,13 +75,26 @@ function doPost(e) {
       // スプレッドシートに記録
       const sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName("シート");
 
-      if (messageText === "はい" || messageText === "いいえ") {
+      if (messageText === "おわったよ！" || messageText === "まだだった…") {
         const row = [date.toLocaleDateString('ja-JP'), time, messageText, userName];  // ✅ ユーザー名で記録
-        sheet.appendRow(row);
 
         // LINEに返信
-        const replyText = (messageText === "はい") ? "よくできました！" : "今からしようね！";
+        const replyText = (messageText === "おわったよ！") ? "よくできました！" : "今からしようね！";
         sendReply(replyToken, replyText);
+
+        // ✅ 「おわったよ！」ならスプレッドシートに記録してグループに通知
+        if (messageText === "おわったよ！") {
+           // ✅ 連続達成日数を計算
+           const streak = updateStreak(userName);  // 連続日数をカウント
+           
+           // 🎯 グループ通知メッセージに連続日数を追加表示
+           const groupMessage = `${userName}がやることを完了しました！🎉（${streak}日連続）`;
+           sendGroupMessage(GROUP_ID, groupMessage);
+
+          // ✅ スプレッドシートに記録
+          row.push(streak);  // E列に連続日数を追加
+          sheet.appendRow(row);
+        }
       }
     }
   } catch (error) {
@@ -93,5 +129,32 @@ function sendReply(replyToken, messageText) {
 
   if (response.getResponseCode() !== 200) {
     Logger.log(`送信エラー: ${response.getContentText()}`);
+  }
+}
+
+// 📌 グループに通知を送信
+function sendGroupMessage(groupId, message) {
+  const url = 'https://api.line.me/v2/bot/message/push';
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${CHANNEL_ACCESS_TOKEN}`
+  };
+
+  const body = JSON.stringify({
+    to: groupId,
+    messages: [{ type: 'text', text: message }]
+  });
+
+  const options = {
+    method: 'post',
+    headers: headers,
+    payload: body,
+    muteHttpExceptions: true
+  };
+
+  const response = UrlFetchApp.fetch(url, options);
+  if (response.getResponseCode() !== 200) {
+    Logger.log(`グループ通知エラー: ${response.getContentText()}`);
   }
 }
